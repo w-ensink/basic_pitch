@@ -45,7 +45,7 @@ fn main() {
         "android" => {
             build_with_cmake_android();
 
-            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs/android/arm64-v8a");
+            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs-android/android/arm64-v8a");
 
             if !onnx_runtime_libs_dir.exists() {
                 download_onnx_runtime_libs_for_android();
