@@ -1,23 +1,11 @@
 use std::path::Path;
 use std::path::PathBuf;
 
-fn cmake_build_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("cpp")
-        .join("cmake-build-release")
-}
-
 fn add_link_search_path(path: impl AsRef<Path>) {
     println!(
         "cargo:rustc-link-search={}",
         path.as_ref().to_str().unwrap()
     );
-}
-
-fn add_link_search_paths(paths: &[&str]) {
-    for path in paths {
-        add_link_search_path(path);
-    }
 }
 
 fn link_static_libs(libs: &[&str]) {
@@ -30,53 +18,33 @@ fn link_static_lib(name: &str) {
     println!("cargo:rustc-link-lib=static={name}");
 }
 
-fn link_neural_pitch() {
-    let lib_path = cmake_build_dir();
-    let lib_name = "neural_pitch_detector";
-    println!("cargo:rustc-link-search={}", lib_path.to_str().unwrap());
-    println!("cargo:rustc-link-lib=static={lib_name}");
-}
-
-fn link_rtneural() {
-    let lib_path = cmake_build_dir()
-        .join("external")
-        .join("RTNeural")
-        .join("RTNeural");
-
-    let lib_name = "RTNeural";
-    println!("cargo:rustc-link-search={}", lib_path.to_str().unwrap());
-    println!("cargo:rustc-link-lib=static={lib_name}");
-}
-
-fn link_onnx_runtime() {
-    let lib_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("cpp")
-        .join("external")
-        .join("onnxruntime")
-        .join("lib");
-    let lib_name = "onnxruntime";
-    println!("cargo:rustc-link-search={}", lib_path.to_str().unwrap());
-    println!("cargo:rustc-link-lib=static={lib_name}");
-}
-
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let out_path_string = std::env::var("OUT_DIR").unwrap();
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
 
     match target_os.as_str() {
         "macos" => {
             println!("cargo:rustc-link-lib=c++");
             println!("cargo:rustc-link-lib=framework=Foundation");
-            link_onnx_runtime();
-            link_rtneural();
-            link_neural_pitch();
+
+            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs-macos/universal");
+
+            if !onnx_runtime_libs_dir.exists() {
+                download_onnx_runtime_libs_for_macos();
+            }
+
+            build_with_cmake_macos();
+
+            add_link_search_path(onnx_runtime_libs_dir);
+            add_link_search_path(format!("{out_path_string}/macos_libs"));
+            link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
         }
         "android" => {
-            configure_cmake_for_android();
             build_with_cmake_android();
 
-            let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
             let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs/android/arm64-v8a");
 
             if !onnx_runtime_libs_dir.exists() {
@@ -124,35 +92,43 @@ fn main() {
     }
 }
 
-fn build_with_cmake_android() {
-    let cmake_output = std::process::Command::new("cmake")
+fn build_with_cmake_macos() {
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let build_dir = format!("{out_dir}/cmake-build-release-macos");
+
+    std::process::Command::new("cmake")
         .args([
-            "--build",
-            &format!("{}/cmake-build-release", std::env::var("OUT_DIR").unwrap()),
+            "-S",
+            ".",
+            "-B",
+            &build_dir,
+            "-DCMAKE_BUILD_TYPE=Release",
+            &format!("-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY='{out_dir}/macos_libs'"),
         ])
-        .current_dir("cpp")
+        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/cpp"))
         .spawn()
         .unwrap()
         .wait_with_output()
         .unwrap();
 
-    if !cmake_output.status.success() {
-        let stdout = String::from_utf8(cmake_output.stdout).unwrap();
-        let stderr = String::from_utf8(cmake_output.stderr).unwrap();
-        panic!("failed to build with cmake: \n\nstdout: {stdout}\n\nstderr: {stderr}");
-    }
+    std::process::Command::new("cmake")
+        .args(["--build", &build_dir])
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
 }
 
-fn configure_cmake_for_android() {
+fn build_with_cmake_android() {
     let ndk_dir = std::env::var("ANDROID_NDK_HOME").expect("set `ANDROID_NDK_HOME` env variable");
     let out_dir = std::env::var("OUT_DIR").unwrap();
 
-    let cmake_output = std::process::Command::new("cmake")
+    std::process::Command::new("cmake")
         .args([
             "-S",
             ".",
             "-B",
-            &format!("{out_dir}/cmake-build-release"),
+            &format!("{out_dir}/cmake-build-release-android"),
             &format!("-DCMAKE_ANDROID_NDK='{ndk_dir}'"),
             &format!("-DCMAKE_TOOLCHAIN_FILE='{ndk_dir}/build/cmake/android.toolchain.cmake'"),
             "-DCMAKE_BUILD_TYPE=Release",
@@ -168,21 +144,20 @@ fn configure_cmake_for_android() {
         .wait_with_output()
         .unwrap();
 
-    if !cmake_output.status.success() {
-        let stdout = String::from_utf8(cmake_output.stdout).unwrap();
-        let stderr = String::from_utf8(cmake_output.stderr).unwrap();
-        panic!("failed to build configure cmake: \n\nstdout: {stdout}\n\nstderr: {stderr}");
-    }
+    std::process::Command::new("cmake")
+        .args(["--build", &format!("{out_dir}/cmake-build-release-android")])
+        .current_dir("cpp")
+        .spawn()
+        .unwrap()
+        .wait_with_output()
+        .unwrap();
 }
 
-fn download_onnx_runtime_libs_for_android() {
+fn download_and_unzip(url: &str, file: &str) {
     let out_dir = std::env::var("OUT_DIR").unwrap();
 
     std::process::Command::new("curl")
-        .args([
-            "-fsSLO",
-            "https://github.com/w-ensink/basic_pitch/releases/download/v0.0.1/onnxruntime-libs.zip",
-        ])
+        .args(["-fsSLO", url])
         .current_dir(&out_dir)
         .spawn()
         .unwrap()
@@ -190,10 +165,24 @@ fn download_onnx_runtime_libs_for_android() {
         .unwrap();
 
     std::process::Command::new("unzip")
-        .arg("onnxruntime-libs.zip")
+        .arg(file)
         .current_dir(&out_dir)
         .spawn()
         .unwrap()
         .wait()
         .unwrap();
+}
+
+fn download_onnx_runtime_libs_for_android() {
+    download_and_unzip(
+        "https://github.com/w-ensink/basic_pitch/releases/download/v0.0.2/onnxruntime-libs-android.zip",
+        "onnxruntime-libs-android.zip",
+    );
+}
+
+fn download_onnx_runtime_libs_for_macos() {
+    download_and_unzip(
+        "https://github.com/w-ensink/basic_pitch/releases/download/v0.0.2/onnxruntime-libs-macos.zip",
+        "onnxruntime-libs-macos.zip",
+    );
 }
