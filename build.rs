@@ -119,11 +119,6 @@ fn main() {
             ));
             link_static_lib("neural_pitch_detector");
             link_static_lib("RTNeural");
-
-            // let ndk_dir =
-            //     std::env::var("ANDROID_NDK_HOME").expect("set `ANDROID_NDK_HOME` env variable");
-            // add_link_search_path(format!("{ndk_dir}/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android"));
-            // println!("cargo:rustc-link-lib=c++_shared")
         }
         _ => {}
     }
