@@ -4,7 +4,7 @@
 
 ANDROID_NDK_HOME="$HOME/Library/Android/sdk/ndk/25.2.9519653"
 ANDROID_SDK_PATH="$HOME/Library/Android/sdk"
-ONNX_TARGET_DIR="$(pwd)/onnxruntime-libs/android"
+ONNX_TARGET_DIR="$(pwd)/onnxruntime-libs/android/arm64-v8a"
 
 echo "using onnxruntime dir: $ONNX_REPO_DIR"
 echo "using sdk path: $ANDROID_SDK_PATH"

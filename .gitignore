@@ -6,3 +6,8 @@ cmake-build-*
 *.mp3
 
 Cargo.lock
+
+onnxruntime-libs
+onnxruntime-libs.zip
+
+.DS_Store
