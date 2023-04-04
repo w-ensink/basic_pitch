@@ -1,0 +1,8 @@
+/target
+
+.idea
+cmake-build-*
+*.wav
+*.mp3
+
+Cargo.lock
