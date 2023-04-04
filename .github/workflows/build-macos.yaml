@@ -10,13 +10,14 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  runs-on: macos-latest
-  steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - run: cargo build --release
+  build_macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo build --release
 
