@@ -66,8 +66,6 @@ fn main() {
 
     match target_os.as_str() {
         "macos" => {
-            println!("cargo:warning=compiling for macos");
-
             println!("cargo:rustc-link-lib=c++");
             println!("cargo:rustc-link-lib=framework=Foundation");
             link_onnx_runtime();
@@ -75,23 +73,17 @@ fn main() {
             link_neural_pitch();
         }
         "android" => {
-            println!("cargo:warning=compiling for android");
-
             configure_cmake_for_android();
             build_with_cmake_android();
 
-            add_link_search_paths(&[
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/abseil_cpp-build/absl/hash",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/abseil_cpp-build/absl/base",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/abseil_cpp-build/absl/container",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/pytorch_cpuinfo-build",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/pytorch_cpuinfo-build/deps/clog",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/google_nsync-build",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/protobuf-build",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/onnx-build",
-                "/Users/wouter/Dev/cpp/onnxruntime/build/Android/Release/_deps/re2-build",
-            ]);
+            let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs/android/arm64-v8a");
+
+            if !onnx_runtime_libs_dir.exists() {
+                download_onnx_runtime_libs_for_android();
+            }
+
+            add_link_search_path(onnx_runtime_libs_dir);
 
             link_static_libs(&[
                 "onnxruntime_common",
@@ -186,4 +178,27 @@ fn configure_cmake_for_android() {
         let stderr = String::from_utf8(cmake_output.stderr).unwrap();
         panic!("failed to build configure cmake: \n\nstdout: {stdout}\n\nstderr: {stderr}");
     }
+}
+
+fn download_onnx_runtime_libs_for_android() {
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+
+    std::process::Command::new("curl")
+        .args([
+            "-fsSLO",
+            "https://github.com/w-ensink/basic_pitch/releases/download/v0.0.1/onnxruntime-libs.zip",
+        ])
+        .current_dir(&out_dir)
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
+
+    std::process::Command::new("unzip")
+        .arg("onnxruntime-libs.zip")
+        .current_dir(&out_dir)
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
 }
