@@ -22,7 +22,7 @@ cd "$ONNX_REPO_DIR" || exit
 
 ONNX_BUILD_DIR="$ONNX_REPO_DIR/build/Android/Release"
 
-echo "cd to $(pwd)"
+echo "cd to $ONNX_BUILD_DIR"
 cd "$ONNX_BUILD_DIR" || exit
 
 echo "making target dir '$ONNX_TARGET_DIR' if it doesn't exist"

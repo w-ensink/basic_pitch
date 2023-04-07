@@ -11,3 +11,6 @@ onnxruntime-libs
 onnxruntime-libs.zip
 
 .DS_Store
+
+*.zip
+onnxruntime-libs-*

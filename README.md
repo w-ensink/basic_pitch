@@ -33,7 +33,7 @@ Then to compile the project, you have to provide the NDK path and the path to th
 export ANDROID_NDK_HOME=$HOME/Library/Android/sdk/ndk/25.2.9519653
 
 # point to the linker from the ndk
-export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$HOME/Library/Android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android33-clang++
+export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android33-clang++
 
 # build your project
 cargo build --target=aarch64-linux-android

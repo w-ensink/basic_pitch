@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_macos:
+  build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
