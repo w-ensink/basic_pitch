@@ -26,6 +26,19 @@ fn main() {
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
 
     match target_os.as_str() {
+        "ios" => {
+            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs-ios/aarch64");
+
+            if !onnx_runtime_libs_dir.exists() {
+                download_onnx_runtime_libs_for_ios();
+            }
+
+            build_with_cmake_ios();
+
+            add_link_search_path(onnx_runtime_libs_dir);
+            add_link_search_path(format!("{out_path_string}/ios_libs/Release"));
+            link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
+        }
         "macos" => {
             println!("cargo:rustc-link-lib=c++");
             println!("cargo:rustc-link-lib=framework=Foundation");
@@ -90,6 +103,36 @@ fn main() {
         }
         _ => {}
     }
+}
+
+fn build_with_cmake_ios() {
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let build_dir = format!("{out_dir}/cmake-build-release-ios");
+
+    std::process::Command::new("cmake")
+        .args([
+            "-S",
+            ".",
+            "-B",
+            &build_dir,
+            "-GXcode",
+            "-DCMAKE_SYSTEM_NAME=iOS",
+            "-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0",
+            "-DCMAKE_BUILD_TYPE=Release",
+            &format!("-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY='{out_dir}/ios_libs'"),
+        ])
+        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/cpp"))
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
+
+    std::process::Command::new("cmake")
+        .args(&["--build", &build_dir, "--config", "Release"])
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
 }
 
 fn build_with_cmake_macos() {
@@ -182,7 +225,14 @@ fn download_onnx_runtime_libs_for_android() {
 
 fn download_onnx_runtime_libs_for_macos() {
     download_and_unzip(
-        "https://github.com/w-ensink/basic_pitch/releases/download/v0.0.2/onnxruntime-libs-macos.zip",
+        "https://github.com/w-ensink/basic_pitch/releses/download/v0.0.2/onnxruntime-libs-macos.zip",
         "onnxruntime-libs-macos.zip",
+    );
+}
+
+fn download_onnx_runtime_libs_for_ios() {
+    download_and_unzip(
+        "https://github.com/w-ensink/basic_pitch/releses/download/v0.0.2/onnxruntime-libs-ios.zip",
+        "onnxruntime-libs-ios.zip",
     );
 }
