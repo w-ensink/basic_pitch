@@ -225,14 +225,14 @@ fn download_onnx_runtime_libs_for_android() {
 
 fn download_onnx_runtime_libs_for_macos() {
     download_and_unzip(
-        "https://github.com/w-ensink/basic_pitch/releses/download/v0.0.2/onnxruntime-libs-macos.zip",
+        "https://github.com/w-ensink/basic_pitch/releases/download/v0.0.2/onnxruntime-libs-macos.zip",
         "onnxruntime-libs-macos.zip",
     );
 }
 
 fn download_onnx_runtime_libs_for_ios() {
     download_and_unzip(
-        "https://github.com/w-ensink/basic_pitch/releses/download/v0.0.2/onnxruntime-libs-ios.zip",
+        "https://github.com/w-ensink/basic_pitch/releases/download/v0.0.2/onnxruntime-libs-ios.zip",
         "onnxruntime-libs-ios.zip",
     );
 }
