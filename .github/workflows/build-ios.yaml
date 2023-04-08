@@ -20,7 +20,7 @@ jobs:
         with:
           toolchain: stable 
           target: aarch64-apple-ios
-      - run: cargo build --release
+      - run: cargo build --release --target=aarch64-apple-ios
   examples:
     runs-on: macos-latest
     steps:

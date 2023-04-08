@@ -109,7 +109,7 @@ fn main() {
         return build_for_ios(&out_dir);
     }
 
-    if target.contains("macos") {
+    if target.contains("darwin") {
         return build_for_macos(&out_dir);
     }
 
