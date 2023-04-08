@@ -20,4 +20,13 @@ jobs:
         with:
           toolchain: stable
       - run: cargo build --release
-
+  examples:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo build --example generated_sine

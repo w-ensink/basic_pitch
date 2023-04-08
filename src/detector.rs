@@ -3,10 +3,10 @@ use std::ffi::c_void;
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct NoteEvent {
-    start_time: f64,
-    end_time: f64,
-    midi_note: i32,
-    amplitude: f64,
+    pub start_time: f64,
+    pub end_time: f64,
+    pub midi_note: i32,
+    pub amplitude: f64,
 }
 
 pub struct PitchDetector {

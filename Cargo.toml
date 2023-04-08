@@ -8,3 +8,7 @@ edition = "2021"
 
 [dependencies]
 
+[[example]]
+name = "generated_sine"
+
+
