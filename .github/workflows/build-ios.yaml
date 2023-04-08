@@ -21,7 +21,8 @@ jobs:
           toolchain: stable 
           target: aarch64-apple-ios
       - run: cargo build --release --target=aarch64-apple-ios
-  examples:
+      - run: cargo build --example generated_sine --target=aarch64-apple-ios
+  simulator:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -30,5 +31,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable 
-          target: aarch64-apple-ios
-      - run: cargo build --example generated_sine --target=aarch64-apple-ios
+          target: aarch64-apple-ios-sim
+      - run: cargo build --release --target=aarch64-apple-ios-sim
+      - run: cargo build --example generated_sine --target=aarch64-apple-ios-sim
