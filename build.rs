@@ -27,6 +27,7 @@ fn main() {
 
     match target_os.as_str() {
         "ios" => {
+            println!("cargo:rustc-link-lib=c++");
             let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs-ios/aarch64");
 
             if !onnx_runtime_libs_dir.exists() {

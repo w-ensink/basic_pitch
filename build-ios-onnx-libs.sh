@@ -21,7 +21,7 @@ mkdir -p "$ONNX_TARGET_DIR"
 echo "combining relevant onnxruntime libs into one"
 
 
-libtool -static -o "$ONNX_TARGET_DIR/onnxruntime-ios.a" \
+libtool -static -o "$ONNX_TARGET_DIR/libonnxruntime.a" \
     Release-iphoneos/libonnx_test_data_proto.a \
     Release-iphoneos/libonnx_test_runner_common.a \
     Release-iphoneos/libonnxruntime_common.a \
