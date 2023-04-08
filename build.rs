@@ -18,92 +18,106 @@ fn link_static_lib(name: &str) {
     println!("cargo:rustc-link-lib=static={name}");
 }
 
+fn build_for_ios(out_dir: &str) {
+    println!("cargo:rustc-link-lib=c++");
+    let onnx_runtime_libs_dir = PathBuf::from(out_dir).join("onnxruntime-libs-ios/aarch64");
+
+    if !onnx_runtime_libs_dir.exists() {
+        download_onnx_runtime_libs_for_ios();
+    }
+
+    build_with_cmake_ios();
+
+    add_link_search_path(onnx_runtime_libs_dir);
+    add_link_search_path(format!("{out_dir}/ios_libs/Release"));
+    link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
+}
+
+fn build_for_macos(out_dir: &str) {
+    println!("cargo:rustc-link-lib=c++");
+    println!("cargo:rustc-link-lib=framework=Foundation");
+
+    let onnx_runtime_libs_dir = PathBuf::from(out_dir).join("onnxruntime-libs-macos/universal");
+
+    if !onnx_runtime_libs_dir.exists() {
+        download_onnx_runtime_libs_for_macos();
+    }
+
+    build_with_cmake_macos();
+
+    add_link_search_path(onnx_runtime_libs_dir);
+    add_link_search_path(format!("{out_dir}/macos_libs"));
+    link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
+}
+
+fn build_for_android(out_dir: &str) {
+    build_with_cmake_android();
+
+    let onnx_runtime_libs_dir =
+        PathBuf::from(out_dir).join("onnxruntime-libs-android/android/arm64-v8a");
+
+    if !onnx_runtime_libs_dir.exists() {
+        download_onnx_runtime_libs_for_android();
+    }
+
+    add_link_search_path(onnx_runtime_libs_dir);
+
+    link_static_libs(&[
+        "onnxruntime_common",
+        "onnx_test_data_proto",
+        "onnx_test_runner_common",
+        "onnxruntime_flatbuffers",
+        "onnxruntime_framework",
+        "onnxruntime_graph",
+        "onnxruntime_mlas",
+        "onnxruntime_optimizer",
+        "onnxruntime_providers",
+        "onnxruntime_session",
+        "onnxruntime_test_utils",
+        "onnxruntime_util",
+        "absl_city",
+        "absl_hash",
+        "absl_low_level_hash",
+        "absl_throw_delegate",
+        "absl_raw_logging_internal",
+        "absl_raw_hash_set",
+        "cpuinfo",
+        "clog",
+        "nsync_cpp",
+        "protobuf-lite",
+        "onnx",
+        "onnx_proto",
+        "re2",
+    ]);
+
+    add_link_search_path(format!("{out_dir}/android_libs",));
+    link_static_lib("neural_pitch_detector");
+    link_static_lib("RTNeural");
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
-    let out_path_string = std::env::var("OUT_DIR").unwrap();
-    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+    let target = std::env::var("TARGET").unwrap();
+    let out_dir = std::env::var("OUT_DIR").unwrap();
 
-    match target_os.as_str() {
-        "ios" => {
-            println!("cargo:rustc-link-lib=c++");
-            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs-ios/aarch64");
-
-            if !onnx_runtime_libs_dir.exists() {
-                download_onnx_runtime_libs_for_ios();
-            }
-
-            build_with_cmake_ios();
-
-            add_link_search_path(onnx_runtime_libs_dir);
-            add_link_search_path(format!("{out_path_string}/ios_libs/Release"));
-            link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
-        }
-        "macos" => {
-            println!("cargo:rustc-link-lib=c++");
-            println!("cargo:rustc-link-lib=framework=Foundation");
-
-            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs-macos/universal");
-
-            if !onnx_runtime_libs_dir.exists() {
-                download_onnx_runtime_libs_for_macos();
-            }
-
-            build_with_cmake_macos();
-
-            add_link_search_path(onnx_runtime_libs_dir);
-            add_link_search_path(format!("{out_path_string}/macos_libs"));
-            link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
-        }
-        "android" => {
-            build_with_cmake_android();
-
-            let onnx_runtime_libs_dir = out_dir.join("onnxruntime-libs-android/android/arm64-v8a");
-
-            if !onnx_runtime_libs_dir.exists() {
-                download_onnx_runtime_libs_for_android();
-            }
-
-            add_link_search_path(onnx_runtime_libs_dir);
-
-            link_static_libs(&[
-                "onnxruntime_common",
-                "onnx_test_data_proto",
-                "onnx_test_runner_common",
-                "onnxruntime_flatbuffers",
-                "onnxruntime_framework",
-                "onnxruntime_graph",
-                "onnxruntime_mlas",
-                "onnxruntime_optimizer",
-                "onnxruntime_providers",
-                "onnxruntime_session",
-                "onnxruntime_test_utils",
-                "onnxruntime_util",
-                "absl_city",
-                "absl_hash",
-                "absl_low_level_hash",
-                "absl_throw_delegate",
-                "absl_raw_logging_internal",
-                "absl_raw_hash_set",
-                "cpuinfo",
-                "clog",
-                "nsync_cpp",
-                "protobuf-lite",
-                "onnx",
-                "onnx_proto",
-                "re2",
-            ]);
-
-            add_link_search_path(format!(
-                "{}/android_libs",
-                std::env::var("OUT_DIR").unwrap()
-            ));
-            link_static_lib("neural_pitch_detector");
-            link_static_lib("RTNeural");
-        }
-        _ => {}
+    if target.contains("ios-sim") {
+        panic!("ios simulator not currently supported");
     }
+
+    if target.contains("ios") {
+        return build_for_ios(&out_dir);
+    }
+
+    if target.contains("macos") {
+        return build_for_macos(&out_dir);
+    }
+
+    if target.contains("android") {
+        return build_for_android(&out_dir);
+    }
+
+    panic!("unsupported target: {}", target);
 }
 
 fn build_with_cmake_ios() {
