@@ -33,6 +33,20 @@ fn build_for_ios(out_dir: &str) {
     link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
 }
 
+fn build_for_ios_sim(out_dir: &str) {
+    println!("cargo:rustc-link-lib=c++");
+    let onnx_runtime_libs_dir = PathBuf::from(out_dir).join("onnxruntime-libs-ios/aarch64/simulator");
+    if !onnx_runtime_libs_dir.exists() {
+        download_onnx_runtime_libs_for_ios();
+    }
+
+    build_with_cmake_ios_sim();
+
+    add_link_search_path(onnx_runtime_libs_dir);
+    add_link_search_path(format!("{out_dir}/ios_libs"));
+    link_static_libs(&["neural_pitch_detector", "RTNeural", "onnxruntime"]);
+}
+
 fn build_for_macos(out_dir: &str) {
     println!("cargo:rustc-link-lib=c++");
     println!("cargo:rustc-link-lib=framework=Foundation");
@@ -102,7 +116,7 @@ fn main() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
 
     if target.contains("ios-sim") {
-        panic!("ios simulator not currently supported");
+        return build_for_ios_sim(&out_dir);
     }
 
     if target.contains("ios") {
@@ -142,6 +156,39 @@ fn build_with_cmake_ios() {
         .wait()
         .unwrap();
 
+    std::process::Command::new("cmake")
+        .args(&["--build", &build_dir, "--config", "Release"])
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
+}
+
+
+fn build_with_cmake_ios_sim() {
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let build_dir = format!("{out_dir}/cmake-build-release-ios-sim");
+    let repo_dir = env!("CARGO_MANIFEST_DIR");
+
+    let _output = std::process::Command::new("cmake")
+        .args([
+            "-S",
+            ".",
+            "-B",
+            &build_dir,
+            "-DPLATFORM=SIMULATORARM64",
+            "-DCMAKE_BUILD_TYPE=Release",
+            &format!("-DCMAKE_TOOLCHAIN_FILE='{repo_dir}/cmake/ios.toolchain.cmake'"),
+            &format!("-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY='{out_dir}/ios_libs'"),
+        ])
+        .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/cpp"))
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap()
+        .wait_with_output()
+        .unwrap();
+
+    // panic!("cmake: {}", String::from_utf8(_output.stdout).unwrap());
     std::process::Command::new("cmake")
         .args(&["--build", &build_dir, "--config", "Release"])
         .spawn()
