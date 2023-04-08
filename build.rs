@@ -170,7 +170,7 @@ fn build_with_cmake_ios_sim() {
     let build_dir = format!("{out_dir}/cmake-build-release-ios-sim");
     let repo_dir = env!("CARGO_MANIFEST_DIR");
 
-    let _output = std::process::Command::new("cmake")
+    std::process::Command::new("cmake")
         .args([
             "-S",
             ".",
@@ -182,13 +182,11 @@ fn build_with_cmake_ios_sim() {
             &format!("-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY='{out_dir}/ios_libs'"),
         ])
         .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/cpp"))
-        .stdout(std::process::Stdio::piped())
         .spawn()
         .unwrap()
         .wait_with_output()
         .unwrap();
 
-    // panic!("cmake: {}", String::from_utf8(_output.stdout).unwrap());
     std::process::Command::new("cmake")
         .args(&["--build", &build_dir, "--config", "Release"])
         .spawn()
